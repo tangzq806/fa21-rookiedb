@@ -14,11 +14,11 @@ import java.util.*;
 
 /**
  * A leaf of a B+ tree. Every leaf in a B+ tree of order d stores between d and
- * 2d (key, record id) pairs and a pointer to its right sibling (i.e. the page
- * number of its right sibling). Moreover, every leaf node is serialized and
- * persisted on a single page; see toBytes and fromBytes for details on how a
- * leaf is serialized. For example, here is an illustration of two order 2
- * leafs connected together:
+  2d (key, record id) pairs and a pointer to its right sibling (i.e. the page
+  number of its right sibling). Moreover, every leaf node is serialized and
+ persisted on a single page; see toBytes and fromBytes for details on how a
+  leaf is serialized. For example, here is an illustration of two order 2
+ leafs connected together:
  *
  *   leaf 1 (stored on some page)          leaf 2 (stored on some other page)
  *   +-------+-------+-------+-------+     +-------+-------+-------+-------+
@@ -148,7 +148,7 @@ class LeafNode extends BPlusNode {
     public LeafNode get(DataBox key) {
         // TODO(proj2): implement
 
-        return null;
+        return this;
     }
 
     // See BPlusNode.getLeftmostLeaf.
@@ -156,7 +156,7 @@ class LeafNode extends BPlusNode {
     public LeafNode getLeftmostLeaf() {
         // TODO(proj2): implement
 
-        return null;
+        return this;
     }
 
     // See BPlusNode.put.
@@ -164,7 +164,26 @@ class LeafNode extends BPlusNode {
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
         // TODO(proj2): implement
 
-        return Optional.empty();
+        if (keys.contains(key)) {
+            throw new BPlusTreeException("insert duplicate entries with the same key");
+        }
+        int index=InnerNode.numLessThanEqual(key,keys);
+        keys.add(index,key);
+        rids.add(index,rid);
+        if(keys.size()<=metadata.getOrder()*2){
+            sync();
+            return Optional.empty();
+        }else {
+           List<DataBox> new_keys=keys.subList(metadata.getOrder(),keys.size());
+           List<RecordId> new_recordId=rids.subList(metadata.getOrder(),rids.size());
+            keys = new ArrayList<>(keys.subList(0, metadata.getOrder()));
+            rids = new ArrayList<>(rids.subList(0, metadata.getOrder()));
+
+            LeafNode new_rightleafNode=new LeafNode(metadata,bufferManager,keys,rids,rightSibling,treeContext);
+            sync();
+            return Optional.of(new Pair<>(new_rightleafNode.keys.get(0),new_rightleafNode.getPage().getPageNum()));
+        }
+
     }
 
     // See BPlusNode.bulkLoad.
@@ -180,7 +199,12 @@ class LeafNode extends BPlusNode {
     @Override
     public void remove(DataBox key) {
         // TODO(proj2): implement
+        int index=keys.indexOf(key);
 
+        if(index>0){
+            keys.remove(index);
+            rids.remove(index);
+        }
         return;
     }
 
@@ -376,8 +400,24 @@ class LeafNode extends BPlusNode {
         // Note: LeafNode has two constructors. To implement fromBytes be sure to
         // use the constructor that reuses an existing page instead of fetching a
         // brand new one.
+        Page page=bufferManager.fetchPage(treeContext,pageNum);
+        Buffer buf = page.getBuffer();
 
-        return null;
+        byte nodeType = buf.get();
+        assert(nodeType == (byte) 1);
+
+        List<DataBox> keys = new ArrayList<>();
+        List<RecordId> rids=new ArrayList<>();
+        long rs=  buf.getLong();
+        Optional<Long> rightSibling = rs == -1 ? Optional.empty() : Optional.of(rs);
+        int nums = buf.getInt();
+
+        for (int i = 0; i < nums; i++) {
+            keys.add(DataBox.fromBytes(buf, metadata.getKeySchema()));
+            rids.add(RecordId.fromBytes(buf));
+        }
+        return new LeafNode(metadata,bufferManager,page,keys,rids,rightSibling,treeContext);
+
     }
 
     // Builtins ////////////////////////////////////////////////////////////////

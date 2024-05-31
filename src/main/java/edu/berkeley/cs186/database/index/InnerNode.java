@@ -14,11 +14,11 @@ import java.util.*;
 
 /**
  * A inner node of a B+ tree. Every inner node in a B+ tree of order d stores
- * between d and 2d keys. An inner node with n keys stores n + 1 "pointers" to
- * children nodes (where a pointer is just a page number). Moreover, every
- * inner node is serialized and persisted on a single page; see toBytes and
- * fromBytes for details on how an inner node is serialized. For example, here
- * is an illustration of an order 2 inner node:
+  between d and 2d keys. An inner node with n keys stores n + 1 "pointers" to
+  children nodes (where a pointer is just a page number). Moreover, every
+  inner node is serialized and persisted on a single page; see toBytes and
+  fromBytes for details on how an inner node is serialized. For example, here
+  is an illustration of an order 2 inner node:
  *
  *     +----+----+----+----+
  *     | 10 | 20 | 30 |    |
@@ -39,7 +39,7 @@ class InnerNode extends BPlusNode {
     private Page page;
 
     // The keys and child pointers of this inner node. See the comment above
-    // LeafNode.keys and LeafNode.rids in LeafNode.java for a warning on the
+     //LeafNode.keys and LeafNode.rids in LeafNode.java for a warning on the
     // difference between the keys and children here versus the keys and children
     // stored on disk. `keys` is always stored in ascending order.
     private List<DataBox> keys;
@@ -81,8 +81,9 @@ class InnerNode extends BPlusNode {
     @Override
     public LeafNode get(DataBox key) {
         // TODO(proj2): implement
+        BPlusNode child=BPlusNode.fromBytes(metadata,bufferManager,treeContext,children.get(numLessThanEqual(key,keys)));
 
-        return null;
+        return child.get(key);
     }
 
     // See BPlusNode.getLeftmostLeaf.
@@ -90,16 +91,44 @@ class InnerNode extends BPlusNode {
     public LeafNode getLeftmostLeaf() {
         assert(children.size() > 0);
         // TODO(proj2): implement
+        BPlusNode getleftchild=BPlusNode.fromBytes(metadata,bufferManager,treeContext,children.get(0));
+        return getleftchild.getLeftmostLeaf() ;
+    }
+    private Optional<Pair<DataBox,Long>> insert(DataBox key,long child){
+        int index=InnerNode.numLessThanEqual(key,keys);
+        keys.add(index,key);
+        children.add(index+1,child);
+        if(children.size()<=metadata.getOrder()*2){
+            sync();
+            return Optional.empty();
+        }else {
+            DataBox split_key =keys.get(metadata.getOrder());
+            List<DataBox> right_keys=keys.subList(metadata.getOrder()+1,children.size());
+            List<Long> right_children=children.subList(metadata.getOrder()+1,children.size());
 
-        return null;
+
+            keys=keys.subList(0,metadata.getOrder());
+            children=children.subList(0,metadata.getOrder()+1);
+            sync();
+
+            InnerNode new_node=new InnerNode(metadata,bufferManager,right_keys,right_children,treeContext);
+            return Optional.of(new Pair(split_key,new_node.getPage().getPageNum()));
+        }
     }
 
     // See BPlusNode.put.
     @Override
     public Optional<Pair<DataBox, Long>> put(DataBox key, RecordId rid) {
         // TODO(proj2): implement
+        BPlusNode child=BPlusNode.fromBytes(metadata,bufferManager,treeContext,children.get(numLessThan(key,keys)));
+;        Optional<Pair<DataBox,Long>> splitinfo = child.put(key,rid);
+        if(!splitinfo.isPresent()){
+            return Optional.empty();
+        }else {
+            Pair<DataBox,Long> info=splitinfo.get();
+            return insert(info.getFirst(),info.getSecond());
+        }
 
-        return Optional.empty();
     }
 
     // See BPlusNode.bulkLoad.
@@ -116,6 +145,8 @@ class InnerNode extends BPlusNode {
     public void remove(DataBox key) {
         // TODO(proj2): implement
 
+        LeafNode left=get(key);
+        left.remove(key);
         return;
     }
 
@@ -187,8 +218,8 @@ class InnerNode extends BPlusNode {
 
     /**
      * Given a list ys sorted in ascending order, numLessThanEqual(x, ys) returns
-     * the number of elements in ys that are less than or equal to x. For
-     * example,
+      the number of elements in ys that are less than or equal to x. For
+      example,
      *
      *   numLessThanEqual(0, Arrays.asList(1, 2, 3, 4, 5)) == 0
      *   numLessThanEqual(1, Arrays.asList(1, 2, 3, 4, 5)) == 1
@@ -208,9 +239,8 @@ class InnerNode extends BPlusNode {
      *    /    |   |   |    \
      *   0     1   2   3     4
      *
-     * If we're searching the tree for value c, then we need to visit child 3.
-     * Not coincidentally, there are also 3 values less than or equal to c (i.e.
-     * a, b, c).
+      If we're searching the tree for value c, then we need to visit child 3.
+      Not coincidentally, there are also 3 values less than or equal to c (i.e.* a, b, c).
      */
     static <T extends Comparable<T>> int numLessThanEqual(T x, List<T> ys) {
         int n = 0;
@@ -350,6 +380,7 @@ class InnerNode extends BPlusNode {
         List<DataBox> keys = new ArrayList<>();
         List<Long> children = new ArrayList<>();
         int n = buf.getInt();
+
         for (int i = 0; i < n; ++i) {
             keys.add(DataBox.fromBytes(buf, metadata.getKeySchema()));
         }

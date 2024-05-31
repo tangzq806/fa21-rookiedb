@@ -59,11 +59,11 @@ abstract class BPlusNode {
      *   Case 1: If inserting the pair (k, r) does NOT cause n to overflow, then
      *           Optional.empty() is returned.
      *   Case 2: If inserting the pair (k, r) does cause the node n to overflow,
-     *           then n is split into a left and right node (described more
-     *           below) and a pair (split_key, right_node_page_num) is returned
-     *           where right_node_page_num is the page number of the newly
-     *           created right node, and the value of split_key depends on
-     *           whether n is an inner node or a leaf node (described more below).
+               then n is split into a left and right node (described more
+               below) and a pair (split_key, right_node_page_num) is returned
+               where right_node_page_num is the page number of the newly
+                created right node, and the value of split_key depends on
+                whether n is an inner node or a leaf node (described more below).
      *
      * Now we explain how to split nodes and which split keys to return. Let's
      * take a look at an example. Consider inserting the key 4 into the example
@@ -82,20 +82,20 @@ abstract class BPlusNode {
      *   +----+----+----+----+  +----+----+----+----+  +----+----+----+----+
      *   leaf0                  leaf1                  leaf2
      *
-     * Now let's insert key 5 into the tree. Now, leaf0 overflows and creates a
-     * new right sibling leaf3. d entries remain in the left node; d + 1 entries
-     * are moved to the right node. DO NOT REDISTRIBUTE ENTRIES ANY OTHER WAY. In
-     * our example, leaf0 and leaf3 would look like this:
+      Now let's insert key 5 into the tree. Now, leaf0 overflows and creates a
+      new right sibling leaf3. d entries remain in the left node; d + 1 entries
+      are moved to the right node. DO NOT REDISTRIBUTE ENTRIES ANY OTHER WAY. In
+      our example, leaf0 and leaf3 would look like this:
      *
      *   +----+----+----+----+  +----+----+----+----+
      *   |  1 |  2 |    |    |->|  3 |  4 |  5 |    |
      *   +----+----+----+----+  +----+----+----+----+
      *   leaf0                  leaf3
      *
-     * When a leaf splits, it returns the first entry in the right node as the
-     * split key. In this example, 3 is the split key. After leaf0 splits, inner
-     * inserts the new key and child pointer into itself and hits case 0 (i.e. it
-     * does not overflow). The tree looks like this:
+      When a leaf splits, it returns the first entry in the right node as the
+      split key. In this example, 3 is the split key. After leaf0 splits, inner
+      inserts the new key and child pointer into itself and hits case 0 (i.e. it
+     does not overflow). The tree looks like this:
      *
      *                          inner
      *                          +--+--+--+--+
@@ -109,10 +109,10 @@ abstract class BPlusNode {
      *   +--+--+--+--+  +--+--+--+--+  +--+--+--+--+  +--+--+--+--+
      *   leaf0          leaf3          leaf1          leaf2
      *
-     * When an inner node splits, the first d entries are kept in the left node
-     * and the last d entries are moved to the right node. The middle entry is
-     * moved (not copied) up as the split key. For example, we would split the
-     * following order 2 inner node
+      When an inner node splits, the first d entries are kept in the left node
+      and the last d entries are moved to the right node. The middle entry is
+      moved (not copied) up as the split key. For example, we would split the
+      following order 2 inner node
      *
      *   +---+---+---+---+
      *   | 1 | 2 | 3 | 4 | 5
@@ -143,9 +143,9 @@ abstract class BPlusNode {
      * This method is very similar to n.put, with a couple of differences:
      *
      * 1. Leaf nodes do not fill up to 2*d+1 and split, but rather, fill up to
-     * be 1 record more than fillFactor full, then "splits" by creating a right
-     * sibling that contains just one record (leaving the original node with
-     * the desired fill factor).
+      be 1 record more than fillFactor full, then "splits" by creating a right
+      sibling that contains just one record (leaving the original node with
+      the desired fill factor).
      *
      * 2. Inner nodes should repeatedly try to bulk load the rightmost child
      * until either the inner node is full (in which case it should split)
@@ -219,10 +219,10 @@ abstract class BPlusNode {
 
     // Pretty Printing /////////////////////////////////////////////////////////
     /**
-     * S-expressions (or sexps) are a compact way of encoding nested tree-like
-     * structures (sort of like how JSON is a way of encoding nested dictionaries
-     * and lists). n.toSexp() returns an sexp encoding of the subtree rooted by
-     * n. For example, the following tree:
+      S-expressions (or sexps) are a compact way of encoding nested tree-like
+      structures (sort of like how JSON is a way of encoding nested dictionaries
+      and lists). n.toSexp() returns an sexp encoding of the subtree rooted by
+      n. For example, the following tree:
      *
      *                      +---+
      *                      | 3 |
@@ -234,7 +234,7 @@ abstract class BPlusNode {
      *
      * has the following sexp
      *
-     *   (((1 (1 1)) (2 (2 2))) 3 ((3 (3 3)) (4 (4 4))))
+       (((1 (1 1)) (2 (2 2))) 3 ((3 (3 3)) (4 (4 4))))
      *
      * Here, (1 (1 1)) represents the mapping from key 1 to record id (1, 1).
      */

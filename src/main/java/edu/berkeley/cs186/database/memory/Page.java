@@ -10,7 +10,7 @@ import edu.berkeley.cs186.database.io.PageException;
 
 /**
  * Represents a page loaded in memory (as opposed to the buffer frame it's in). Wraps
- * around buffer manager frames, and requests the page be loaded into memory as necessary.
+  around buffer manager frames, and requests the page be loaded into memory as necessary.
  */
 public class Page {
     // lock context for this page
